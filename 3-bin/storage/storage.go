@@ -2,7 +2,7 @@ package storage
 
 import (
 	"bin-cli/bins"
-	"bin-cli/file"
+	"bin-cli/files"
 	"encoding/json"
 )
 
@@ -11,11 +11,11 @@ func SaveBinList(list *bins.BinList, path string) error {
 	if err != nil {
 		return err
 	}
-	return file.WriteFile(path, data)
+	return files.WriteFile(path, data)
 }
 
 func LoadBinList(path string) (*bins.BinList, error) {
-	data, err := file.ReadFile(path)
+	data, err := files.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
