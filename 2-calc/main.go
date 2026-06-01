@@ -9,6 +9,20 @@ import (
 	"strings"
 )
 
+type CalcFunc func([]float64) float64
+
+var operations = map[string]CalcFunc{
+	"AVG": calculateAvg,
+	"SUM": calculateSum,
+	"MED": calculateMed,
+}
+
+var operationNames = map[string]string{
+	"AVG": "Среднее",
+	"SUM": "Сумма",
+	"MED": "Медиана",
+}
+
 func readValue() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	str, err := reader.ReadString('\n')
@@ -18,9 +32,14 @@ func readValue() (string, error) {
 func readOperation() string {
 	for {
 		fmt.Println("Выберите операцию: AVG (среднее), SUM (сумма), MED (медиана)")
-		operation, _ := readValue()
+		operation, err := readValue()
+		if err != nil {
+			fmt.Println("Ошибка чтения ввода.")
+			continue
+		}
 		operation = strings.ToUpper(operation)
-		if operation == "AVG" || operation == "SUM" || operation == "MED" {
+
+		if _, ok := operations[operation]; ok {
 			return operation
 		}
 		fmt.Println("Неверная операция. Попробуйте снова.")
@@ -30,41 +49,46 @@ func readOperation() string {
 func readNumbers() []float64 {
 	for {
 		fmt.Printf("Введите числа через запятую: ")
-		str, _ := readValue()
+		str, err := readValue()
+		if err != nil {
+			fmt.Println("Ошибка чтения ввода.")
+			continue
+		}
 		trimmedStr := strings.TrimSpace(str)
-		if trimmedStr != "" {
-			parts := strings.Split(trimmedStr, ",")
-			numbers := []float64{}
-			validInput := true
-			for _, part := range parts {
-				part = strings.TrimSpace(part)
-				number, err := strconv.ParseFloat(part, 64)
-				if err != nil {
-					fmt.Println("Ошибка ввода данных, попробуйте снова.")
-					validInput = false
-					break
-				}
-				numbers = append(numbers, number)
-			}
-			if len(numbers) > 0 && validInput {
-				return numbers
-			}
-		} else {
+		if trimmedStr == "" {
 			fmt.Println("Пустой ввод, попробуйте снова.")
 			continue
+		}
+
+		parts := strings.Split(trimmedStr, ",")
+		numbers := make([]float64, 0, len(parts))
+		validInput := true
+
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			number, err := strconv.ParseFloat(part, 64)
+			if err != nil {
+				fmt.Printf("Ошибка: '%s' не является числом. Попробуйте снова.\n", part)
+				validInput = false
+				break
+			}
+			numbers = append(numbers, number)
+		}
+
+		if validInput {
+			return numbers
 		}
 	}
 }
 
 func calculateAvg(numbers []float64) float64 {
-	sum := calculateSum(numbers)
-	return sum / float64(len(numbers))
+	return calculateSum(numbers) / float64(len(numbers))
 }
 
 func calculateSum(numbers []float64) float64 {
 	sum := 0.0
 	for _, num := range numbers {
-		sum += float64(num)
+		sum += num
 	}
 	return sum
 }
@@ -84,28 +108,18 @@ func main() {
 	fmt.Println("Калькулятор операций над числами")
 
 	for {
-		operation := readOperation()
+		opKey := readOperation()
 		numbers := readNumbers()
 
-		var result float64
-		var operationName string
+		calcFunc := operations[opKey]
+		result := calcFunc(numbers)
+		opName := operationNames[opKey]
 
-		switch operation {
-		case "SUM":
-			result = calculateSum(numbers)
-			operationName = "Сумма"
-		case "AVG":
-			result = calculateAvg(numbers)
-			operationName = "Среднее"
-		case "MED":
-			result = calculateMed(numbers)
-			operationName = "Медиана"
-		}
+		fmt.Printf("%s: %.2f\n", opName, result)
 
-		fmt.Printf("%s: %.2f\n", operationName, result)
 		fmt.Print("Хотите выполнить еще одну операцию? (y/n): ")
 		answer, _ := readValue()
-		if answer != "y" && answer != "Y" {
+		if strings.ToLower(answer) != "y" {
 			break
 		}
 	}
